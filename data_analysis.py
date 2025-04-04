@@ -24,6 +24,8 @@ df = pd.DataFrame({
     "label": labels
 })
 
+# df.to_csv("brain_tumor_mri.csv", index=False)
+
 #Data exploding
 # print(df.head())
 # print(df.tail())
@@ -90,21 +92,21 @@ df = pd.DataFrame({
 # plt.savefig("data_visualization.png", dpi=300, bbox_inches="tight")
 # plt.show()
 
-label_encoder = LabelEncoder()
-df['category_encoded'] = label_encoder.fit_transform(df['label'])
-
-df = df[['image_path', 'category_encoded']]
-df.to_csv('data_encoded.csv', index=False)
-
-ros = RandomOverSampler(random_state=42)
-x_resampled, y_resampled = ros.fit_resample(df[['image_path']], df['category_encoded'])
-
-df_resampled = pd.DataFrame(x_resampled, columns=['image_path'])
-df_resampled['category_encoded'] = y_resampled
-
-print("\nClass distribution after oversampling:")
-print(df_resampled['category_encoded'].value_counts())
-
-df_resampled['category_encoded'] = df_resampled['category_encoded'].astype(str)
-df_resampled.to_csv('data_resampled.csv', index=False)
+# label_encoder = LabelEncoder()
+# df['category_encoded'] = label_encoder.fit_transform(df['label'])
+#
+# df = df[['image_path', 'category_encoded']]
+# df.to_csv('data_encoded.csv', index=False)
+#
+# ros = RandomOverSampler(random_state=42)
+# x_resampled, y_resampled = ros.fit_resample(df[['image_path']], df['category_encoded'])
+#
+# df_resampled = pd.DataFrame(x_resampled, columns=['image_path'])
+# df_resampled['category_encoded'] = y_resampled
+#
+# print("\nClass distribution after oversampling:")
+# print(df_resampled['category_encoded'].value_counts())
+#
+# df_resampled['category_encoded'] = df_resampled['category_encoded'].astype(str)
+# df_resampled.to_csv('data_resampled.csv', index=False)
 

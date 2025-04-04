@@ -37,7 +37,7 @@ class DepthwiseSeparableConv(nn.Module):
                                    groups=in_channels)
         self.pointwise = nn.Conv2d(in_channels, out_channels, kernel_size=1)
         self.bn = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU
+        self.relu = nn.ReLU()
 
     def forward(self, x):
         x = self.depthwise(x)
@@ -75,11 +75,14 @@ class FibonacciNet(nn.Module):
         self.block3_pool = nn.MaxPool2d(kernel_size=2)  # -> 55 x 28 x 28
 
         # PCB1: Block 2 -> Block 4
+        # We need to go from 56x56 to 14x14, so we need one more pooling operation
         self.pcb1 = nn.Sequential(
-            nn.Conv2d(34, 24, kernel_size=3, padding=1),    # 24 x 56 x 56
-            Avg2MaxPooling(),       # 24 x 28 x 28
-            nn.Conv2d(24, 24, kernel_size=3, padding=1),    # 24 x 28 x 28
-            Avg2MaxPooling()        # 24 x 14 x 14
+            nn.Conv2d(34, 24, kernel_size=3, padding=1),    # 24 x 112 x 112
+            Avg2MaxPooling(),       # 24 x 56 x 56
+            nn.Conv2d(24, 24, kernel_size=3, padding=1),    # 24 x 56 x 56
+            Avg2MaxPooling(),        # 24 x 28 x 28
+            nn.Conv2d(24, 24, kernel_size=3, padding=1),  # 24 x 28 x 28
+            Avg2MaxPooling()         # 24 x 14 x 14
         )
 
         # Block 4 (89 filters)
@@ -91,11 +94,14 @@ class FibonacciNet(nn.Module):
         )
 
         # PCB2: Block 3 -> Block 5
+        # We need to go from 28x28 to 7x7, so ensure proper downsampling
         self.pcb2 = nn.Sequential(
-            nn.Conv2d(55, 24, kernel_size=3, padding=1),  # 24 x 28 x 28
-            Avg2MaxPooling(),  # 24 x 14 x 14
+            nn.Conv2d(55, 24, kernel_size=3, padding=1),  # 24 x 56 x 56
+            Avg2MaxPooling(),       # 24 x 28 x 28
+            nn.Conv2d(24, 24, kernel_size=3, padding=1),  # 24 x 28 x 28
+            Avg2MaxPooling(),        # 24 x 14 x 14
             nn.Conv2d(24, 24, kernel_size=3, padding=1),  # 24 x 14 x 14
-            Avg2MaxPooling()  # 24 x 7 x 7
+            Avg2MaxPooling()         # 24 x 7 x 7
         )
 
         # Block 5 (144 filters)
@@ -117,22 +123,22 @@ class FibonacciNet(nn.Module):
         self.fc = nn.Linear(377, num_classes)
         self.sigmoid = nn.Sigmoid()
 
-    def backward(self, x):
+    def forward(self, x):
         # Block 1
-        x = self.block1(x)
+        x = self.block1(x)          # 21 x 112 x 112
 
         # Block 2
         x = self.block2(x)
-        x2 = self.block2_relu(x)    # Save for pcb1
-        x = self.block2_pool(x2)
+        x2 = self.block2_relu(x)    # Save for pcb1     34 x 112 x 112
+        x = self.block2_pool(x2)    # 34 x 56 x 56
 
         # Block 3
         x = self.block3(x)
-        x3 = self.block3_relu(x)    # Save for pcb1
-        x = self.block3_pool(x)
+        x3 = self.block3_relu(x)    # Save for pcb1     55 x 56 x 56
+        x = self.block3_pool(x)     # 55 x 28 x 28
 
         # Block 4
-        x = self.block4(x)
+        x = self.block4(x)          # 89 x 14 x 14
 
         # PCB1 processing
         pcb1 = self.pcb1(x2)     # Using x2 from block 2
@@ -410,6 +416,7 @@ def main():
 
     # Initialize model
     model = FibonacciNet(input_shape=(3, 224, 224), num_classes=1)
+    model.to(device)
 
     # Train model
     trainer = FibonacciNetTrainer(model, device, batch_size=batch_size)
